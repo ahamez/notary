@@ -27,9 +27,11 @@ defmodule Notary.Plug.VerifyRequest do
     end
   end
 
-  defp verify(auth, provider) do
+  defp verify(token, provider) do
     try do
-      case OpenIDConnect.verify(provider, auth) do
+      token = String.replace_leading(token, "Bearer ", "")
+
+      case OpenIDConnect.verify(provider, token) do
         {:ok, claims} ->
           Logger.debug("#{inspect(claims)}")
           {:ok, token_exp} = DateTime.from_unix(claims["exp"])
@@ -45,7 +47,7 @@ defmodule Notary.Plug.VerifyRequest do
           end
 
         _ ->
-          Logger.info("Invalid token #{inspect(auth)}")
+          Logger.info("Invalid token #{inspect(token)}")
           {:error, :cannot_verify}
       end
     rescue
