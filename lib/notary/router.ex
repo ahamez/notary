@@ -12,6 +12,10 @@ defmodule Notary.Router do
   plug(:match)
   plug(:dispatch, builder_opts())
 
+  get "/health" do
+    send_resp(conn, :ok, "")
+  end
+
   get "/api/v1/public_key" do
     send_resp(conn, :ok, Notary.Sign.public_key(opts[:sign]))
   end
