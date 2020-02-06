@@ -11,6 +11,10 @@ defmodule Notary.Plug.VerifyRequest do
     opts
   end
 
+  def call(conn = %Plug.Conn{request_path: "/health"}, _opts) do
+    conn
+  end
+
   def call(conn, opts) do
     with {:ok, auth} <- get_auth_header(conn),
          :ok <- verify(auth, opts[:oidc_provider]) do
