@@ -14,7 +14,13 @@ defmodule Notary.Application do
       Plug.Cowboy.child_spec(
         scheme: :http,
         plug:
-          {Notary.Router, [oidc: conf.oidc, oidc_provider: conf.oidc_provider, sign: Notary.Sign]},
+          {Notary.Router,
+           [
+             max_post_length: conf.max_post_length,
+             oidc: conf.oidc,
+             oidc_provider: conf.oidc_provider,
+             sign: Notary.Sign
+           ]},
         port: conf.port
       ),
       {OpenIDConnect.Worker, conf.oidc}
@@ -28,7 +34,31 @@ defmodule Notary.Application do
     Supervisor.start_link(children, opts)
   end
 
-  defp configure do
+  defp configure() do
+    max_post_length =
+      case Application.fetch_env!(:notary, :max_post_length) do
+        {:env, var, default} ->
+          case var |> System.get_env(default) |> String.to_integer() do
+            0 -> :inf
+            max_post_length -> max_post_length
+          end
+
+        max_post_length ->
+          max_post_length
+      end
+
+    if max_post_length < 0 do
+      raise "Negative max_post_length"
+    end
+
+    oidc =
+      case Application.get_env(:notary, :oidc) do
+        {:env, var} -> var |> System.fetch_env!() |> read_oidc_json()
+        oidc -> oidc
+      end
+
+    [oidc_provider] = Keyword.keys(oidc)
+
     port =
       case Application.fetch_env!(:notary, :http_port) do
         {:env, var, default} -> var |> System.get_env(default) |> String.to_integer()
@@ -41,20 +71,12 @@ defmodule Notary.Application do
         secret -> secret
       end
 
-    oidc =
-      case Application.get_env(:notary, :oidc) do
-        {:env, var} -> var |> System.fetch_env!() |> read_oidc_json()
-        oidc -> oidc
-      end
-
-    1 = length(oidc)
-    [oidc_provider] = Keyword.keys(oidc)
-
     %{
-      port: port,
-      secret: secret,
+      max_post_length: max_post_length,
       oidc: oidc,
-      oidc_provider: oidc_provider
+      oidc_provider: oidc_provider,
+      port: port,
+      secret: secret
     }
   end
 
