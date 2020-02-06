@@ -7,15 +7,16 @@ defmodule Notary.Plug.ReadPostBody do
     defexception message: "Max length", plug_status: 413
   end
 
-  def init(options) do
-    options
+  def init(opts) do
+    opts
   end
 
-  def call(conn = %Plug.Conn{method: "POST"}, _opts) do
-    with {:ok, body, conn} <- read_body(conn) do
+  def call(conn = %Plug.Conn{method: "POST"}, opts) do
+    with {:ok, body, conn} <- read_body(conn, opts[:max_post_length]) do
       Plug.Conn.assign(conn, :body, body)
     else
-      _ -> raise MaxLengthError
+      _ ->
+        raise MaxLengthError
     end
   end
 
@@ -23,13 +24,38 @@ defmodule Notary.Plug.ReadPostBody do
     conn
   end
 
-  # TODO Configurable max length
-  defp read_body(conn) do
+  defp read_body(conn, :inf) do
     case Plug.Conn.read_body(conn) do
       {atom, body, conn} ->
-        do_read_body(<<>>, {atom, body, conn}, 32_000_000 - byte_size(body))
+        do_read_inf_body(<<>>, {atom, body, conn})
 
       _ ->
+        # TODO. Change this.
+        raise MaxLengthError
+    end
+  end
+
+  defp read_body(conn, max_length) do
+    case Plug.Conn.read_body(conn) do
+      {atom, body, conn} ->
+        do_read_body(<<>>, {atom, body, conn}, max_length - byte_size(body))
+
+      _ ->
+        raise MaxLengthError
+    end
+  end
+
+  defp do_read_inf_body(acc, {:ok, body, conn}) do
+    {:ok, acc <> body, conn}
+  end
+
+  defp do_read_inf_body(acc, {:more, partial_body, conn}) do
+    case Plug.Conn.read_body(conn) do
+      {atom, body, conn} ->
+        do_read_inf_body(acc <> partial_body, {atom, body, conn})
+
+      _ ->
+        # TODO. Change this.
         raise MaxLengthError
     end
   end

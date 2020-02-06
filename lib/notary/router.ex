@@ -8,7 +8,7 @@ defmodule Notary.Router do
 
   plug(Plug.Logger)
   plug(Notary.Plug.VerifyRequest, builder_opts())
-  plug(Notary.Plug.ReadPostBody)
+  plug(Notary.Plug.ReadPostBody, builder_opts())
   plug(:match)
   plug(:dispatch, builder_opts())
 
