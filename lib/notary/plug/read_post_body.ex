@@ -26,52 +26,56 @@ defmodule Notary.Plug.ReadPostBody do
 
   defp read_body(conn, :inf) do
     case Plug.Conn.read_body(conn) do
-      {atom, body, conn} ->
-        do_read_inf_body(<<>>, {atom, body, conn})
+      {atom, partial_body, conn} ->
+        Logger.debug("Read #{byte_size(partial_body)} bytes")
+        do_read_inf_body(partial_body, atom, conn)
 
       _ ->
-        # TODO. Change this.
         raise MaxLengthError
     end
   end
 
   defp read_body(conn, max_length) do
     case Plug.Conn.read_body(conn) do
-      {atom, body, conn} ->
-        do_read_body(<<>>, {atom, body, conn}, max_length - byte_size(body))
+      {atom, partial_body, conn} ->
+        Logger.debug("Read #{byte_size(partial_body)} bytes")
+        do_read_body(partial_body, atom, conn, max_length - byte_size(partial_body))
 
       _ ->
         raise MaxLengthError
     end
   end
 
-  defp do_read_inf_body(acc, {:ok, body, conn}) do
-    {:ok, acc <> body, conn}
+  defp do_read_inf_body(acc, :ok, conn) do
+    Logger.debug("Total read #{byte_size(acc)} bytes")
+    {:ok, acc, conn}
   end
 
-  defp do_read_inf_body(acc, {:more, partial_body, conn}) do
+  defp do_read_inf_body(acc, :more, conn) do
     case Plug.Conn.read_body(conn) do
-      {atom, body, conn} ->
-        do_read_inf_body(acc <> partial_body, {atom, body, conn})
+      {atom, partial_body, conn} ->
+        Logger.debug("Read #{byte_size(partial_body)} bytes")
+        do_read_inf_body(acc <> partial_body, atom, conn)
 
       _ ->
-        # TODO. Change this.
         raise MaxLengthError
     end
   end
 
-  defp do_read_body(_, _, rem_len) when rem_len <= 0 do
+  defp do_read_body(_acc, _atom, _conn, rem_len) when rem_len <= 0 do
     raise MaxLengthError
   end
 
-  defp do_read_body(acc, {:ok, body, conn}, _) do
-    {:ok, acc <> body, conn}
+  defp do_read_body(acc, :ok, conn, _rem_len) do
+    Logger.debug("Total read #{byte_size(acc)} bytes")
+    {:ok, acc, conn}
   end
 
-  defp do_read_body(acc, {:more, partial_body, conn}, rem_len) do
+  defp do_read_body(acc, :more, conn, rem_len) do
     case Plug.Conn.read_body(conn) do
-      {atom, body, conn} ->
-        do_read_body(acc <> partial_body, {atom, body, conn}, rem_len - byte_size(body))
+      {atom, partial_body, conn} ->
+        Logger.debug("Read #{byte_size(partial_body)} bytes")
+        do_read_body(acc <> partial_body, atom, conn, rem_len - byte_size(partial_body))
 
       _ ->
         raise MaxLengthError
