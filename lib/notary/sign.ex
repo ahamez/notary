@@ -19,6 +19,10 @@ defmodule Notary.Sign do
     GenServer.call(server, {:sign, data})
   end
 
+  def signature(server, data) do
+    GenServer.call(server, {:signature, data})
+  end
+
   def verify(server, data) do
     GenServer.call(server, {:verify, data})
   end
@@ -46,6 +50,11 @@ defmodule Notary.Sign do
   @impl true
   def handle_call({:sign, data}, _from, state = %{secret: secret}) do
     {:reply, :enacl.sign(data, secret), state}
+  end
+
+  @impl true
+  def handle_call({:signature, data}, _from, state = %{secret: secret}) do
+    {:reply, :enacl.sign_detached(data, secret), state}
   end
 
   @impl true

@@ -25,6 +25,11 @@ defmodule Notary.Router do
     send_resp(conn, :ok, signed)
   end
 
+  post "/api/v1/signature" do
+    signature = Notary.Sign.signature(opts[:sign], conn.assigns[:body])
+    send_resp(conn, :ok, signature)
+  end
+
   post "/api/v1/verify" do
     answer = Notary.Sign.verify(opts[:sign], conn.assigns[:body])
     send_resp(conn, :ok, "#{Atom.to_string(answer)}")
