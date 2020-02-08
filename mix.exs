@@ -20,9 +20,7 @@ defmodule Notary.MixProject do
 
   defp deps do
     [
-      # Waiting for next release. We need master for crypto_sign_ed25519_sk_to_pk/1.
-      # {:enacl, "~> 0.17.2"},
-      {:enacl, github: "jlouis/enacl", commit: "fc943a19c7527c6af7f2ece948b42dcc1f2882d4"},
+      {:enacl, "~> 1.0.0"},
       {:openid_connect, "~> 0.1"},
       {:plug_cowboy, "~> 2.0"}
     ]
