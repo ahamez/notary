@@ -47,7 +47,6 @@ defmodule Notary.Plug.ReadPostBody do
   end
 
   defp do_read_inf_body(acc, :ok, conn) do
-    Logger.debug("Total read #{byte_size(acc)} bytes")
     {:ok, acc, conn}
   end
 
@@ -55,7 +54,7 @@ defmodule Notary.Plug.ReadPostBody do
     case Plug.Conn.read_body(conn) do
       {atom, partial_body, conn} ->
         Logger.debug("Read #{byte_size(partial_body)} bytes")
-        do_read_inf_body(acc <> partial_body, atom, conn)
+        do_read_inf_body([acc, partial_body], atom, conn)
 
       _ ->
         raise MaxLengthError
@@ -67,7 +66,6 @@ defmodule Notary.Plug.ReadPostBody do
   end
 
   defp do_read_body(acc, :ok, conn, _rem_len) do
-    Logger.debug("Total read #{byte_size(acc)} bytes")
     {:ok, acc, conn}
   end
 
@@ -75,7 +73,7 @@ defmodule Notary.Plug.ReadPostBody do
     case Plug.Conn.read_body(conn) do
       {atom, partial_body, conn} ->
         Logger.debug("Read #{byte_size(partial_body)} bytes")
-        do_read_body(acc <> partial_body, atom, conn, rem_len - byte_size(partial_body))
+        do_read_body([acc, partial_body], atom, conn, rem_len - byte_size(partial_body))
 
       _ ->
         raise MaxLengthError
